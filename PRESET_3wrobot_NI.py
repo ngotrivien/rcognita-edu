@@ -19,6 +19,7 @@ import loggers
 import visuals
 from utilities import on_key_press
 
+
 import argparse
 
 #----------------------------------------Set up dimensions
@@ -36,8 +37,10 @@ parser = argparse.ArgumentParser(description=description)
 
 parser.add_argument('--ctrl_mode', metavar='ctrl_mode', type=str,
                     choices=['MPC',
-                             "N_CTRL"],
-                    default='N_CTRL',
+                             'N_CTRL',
+                             'kinematic',
+                             'LQR'],
+                    default='kinematic',
                     help='Control mode. Currently available: ' +
                     '----manual: manual constant control specified by action_manual; ' +
                     '----nominal: nominal controller, usually used to benchmark optimal controllers;' +                     
@@ -224,8 +227,11 @@ alpha_deg_0 = alpha0/2/np.pi
 #----------------------------------------Initialization : : model
 
 #----------------------------------------Initialization : : controller
-my_ctrl_nominal = None 
 
+
+my_ctrl_nominal = controllers.ControllerKinematic() 
+
+        
 # Predictive optimal controller
 my_ctrl_opt_pred = controllers.ControllerOptimalPredictive(dim_input,
                                            dim_output,
@@ -246,7 +252,7 @@ my_ctrl_opt_pred = controllers.ControllerOptimalPredictive(dim_input,
                                            critic_struct = critic_struct,
                                            run_obj_struct = run_obj_struct,
                                            run_obj_pars = [R1],
-                                           observation_target = [],
+                                           observation_target = [0.0, 0.0, 0.0],
                                            state_init=state_init,
                                            obstacle=[xdistortion_x, ydistortion_y,distortion_sigma],
                                            seed=seed)
@@ -356,7 +362,9 @@ if is_visualization:
     
     plt.show()
     
-else:   
+else:
+    print("running robot")
+
     run_curr = 1
     datafile = datafiles[0]
     
@@ -379,8 +387,8 @@ else:
         run_obj = my_ctrl_benchm.run_obj(observation, action)
         accum_obj = my_ctrl_benchm.accum_obj_val
         
-        count_CALF = my_ctrl_benchm.D_count()
-        count_N_CTRL = my_ctrl_benchm.get_N_CTRL_count()
+        # count_CALF = my_ctrl_benchm.D_count()
+        # count_N_CTRL = my_ctrl_benchm.get_N_CTRL_count()
 
         if is_print_sim_step:
             my_logger.print_sim_step(t, xCoord, yCoord, alpha, run_obj, accum_obj, action)
@@ -413,3 +421,4 @@ else:
             if is_log_data:
                 datafile = datafiles[run_curr-1]
                  
+

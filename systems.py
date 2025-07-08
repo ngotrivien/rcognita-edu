@@ -276,20 +276,65 @@ class Sys3WRobotNI(System):
         #####################################################################################################
         ############################# write down here math model of robot ###################################
         #####################################################################################################    
+
+        """
+        Kinematics of the 3-wheel robot (non-holonomic integrator).
+        Describes the change in the states (x, y, theta) based on control inputs.
+        """
+
+      
+        # Compute the state derivatives (changes in x, y, and theta)
+
+        dx = action[0] * np.cos(state[2])  # Change in x based on velocity and orientation
+        dy = action[0] * np.sin(state[2])  # Change in y based on velocity and orientation
+        dtheta = action[1]# Change in theta based on angular velocity omega
+
+        # Create the state derivative array
+        Dstate = np.array([dx, dy, dtheta])
              
         return Dstate    
  
+
+ 
     def _disturb_dyn(self, t, disturb):
-        """
-        
-        
-        """       
+        # This is the original
+        """    
         Ddisturb = np.zeros(self.dim_disturb)
         
         for k in range(0, self.dim_disturb):
             Ddisturb[k] = - self.tau_disturb[k] * ( disturb[k] + self.sigma_disturb[k] * (randn() + self.mu_disturb[k]) )
                 
         return Ddisturb   
+        """       
+
+
+        """
+        Models the disturbance affecting the system.
+        In this example, we use Gaussian noise to simulate disturbances.
+
+        :param t: Time step (not directly used in this case)
+        :param disturb: Current disturbance values (if any)
+
+        :return: The new disturbance values after applying the disturbance model
+        """
+        # Initialize an array to store the disturbance changes
+        Ddisturb = np.zeros(self.dim_disturb)  
+    
+        # If disturbances are enabled, apply them
+        if self.is_disturb:  
+            if len(disturb) > 0:
+                # Modify disturbance as a function of time (e.g., disturbance increases over time)
+                disturbance_factor = disturb[0] * np.sin(t)  # Modify disturbance over time (for example, sinusoidal disturbance)
+            else: 
+                disturbance_factor = 0  # In case disturb is empty, no disturbance is applied
+
+
+            for k in range(self.dim_disturb):
+            # Apply Gaussian noise disturbance for each component of the disturbance
+                Ddisturb[k] = -self.tau_disturb[k] * (disturb[k] + self.sigma_disturb[k] * (randn() + self.mu_disturb[k])) * disturbance_factor
+
+        return Ddisturb  # Return the updated disturbance values
+    
     
     def out(self, state, action=[]):
         observation = np.zeros(self.dim_output)
